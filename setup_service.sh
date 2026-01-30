@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="Mapsim_chat"
-APP_DIR="/root/Mapsim_chat"   # مسیر پروژه روی VPS
+APP_DIR="/root/Mapsim_chat"
 VENV_PATH="$APP_DIR/venv"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
 
@@ -14,23 +14,26 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Check venv
-if [ ! -f "$VENV_PATH/bin/uvicorn" ]; then
-  echo "❌ venv not found or uvicorn not installed"
+# 2. Check uvicorn
+if [ ! -x "$VENV_PATH/bin/uvicorn" ]; then
+  echo "❌ uvicorn not found at $VENV_PATH/bin/uvicorn"
   exit 1
 fi
 
+echo "✅ venv & uvicorn detected"
+
 # 3. Create systemd service
-cat <<EOF > $SERVICE_FILE
+cat <<EOF > "$SERVICE_FILE"
 [Unit]
 Description=Mapsim Chat FastAPI Service
 After=network.target
 
 [Service]
-User=ubuntu
+User=root
 WorkingDirectory=$APP_DIR
 ExecStart=$VENV_PATH/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=always
+RestartSec=3
 StandardOutput=journal
 StandardError=journal
 
@@ -42,8 +45,8 @@ EOF
 systemctl daemon-reload
 
 # 5. Enable & start service
-systemctl enable $APP_NAME
-systemctl restart $APP_NAME
+systemctl enable "$APP_NAME"
+systemctl restart "$APP_NAME"
 
 echo "✅ Service installed and started successfully!"
 echo "📌 Check status: systemctl status $APP_NAME"
