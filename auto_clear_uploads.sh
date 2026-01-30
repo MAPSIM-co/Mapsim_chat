@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-APP_NAME="Mapsim_chat"
+APP_NAME="Mapsim_chat_auto_clear_uploads"
 APP_DIR="/root/Mapsim_chat"  
 VENV_PATH="$APP_DIR/venv"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
