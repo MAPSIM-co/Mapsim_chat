@@ -5,12 +5,6 @@ Users can register, login, and chat globally or privately. No admin panel is inc
 
 ---
 
-## Language
-
-**- [فارسی](./README_FA.md)**
-
----
-
 ## 🚀 Demo
 
 🔗 **[Watch Demo](./#)**
