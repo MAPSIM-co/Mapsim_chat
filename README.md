@@ -1,30 +1,31 @@
-# Madol Chat
+# Mapsim Chat
 
-An educational multiplication table game for practice, training, and competition.
+A simple real-time chat application with end-to-end encryption (E2EE) for text and file messages.  
+Users can register, login, and chat globally or privately. No admin panel is included.
 
-## Language 
+---
 
-**- [زبان فارسی](./README_FA.md)**
+## Language
+
+**- [فارسی](./README_FA.md)**
 
 ---
 
 ## 🚀 Demo
 
-
-
-🔗 **[Watch Demo Game](./#)**
+🔗 **[Watch Demo](./#)**
 
 ---
 
 ## 💡 Features
 
-- Practice multiplication tables from 1 to 12
-- Timed quizzes and scoring
-- Track player progress and high scores
-- Cross-platform: Linux, Windows, macOS
-- Admin panel for managing players and admins
-- Practice mode with review of wrong answers
-- Statistics APIs for players and questions
+- Global Chat Room
+- Private Chat Between Users
+- End-to-end Encryption For Messages
+- File Sharing (images, video, PDF, other)
+- JWT-based Authentication
+- Persistent Chat History In SQLite
+- Cross-platform: `Linux`, `macOS`, `Windows`
 
 ---
 
@@ -35,6 +36,7 @@ An educational multiplication table game for practice, training, and competition
 - SQLite (database)
 - HTML / CSS / JavaScript (frontend)
 - Optional: Uvicorn (ASGI server)
+- JavaScript libs: libsodium for E2EE
 
 ---
 
@@ -50,277 +52,242 @@ sudo apt upgrade -y
 ### Step 1: Clone the repository
 
 ```bash
-git clone https://github.com/MAPSIM-co/zarb-table-game.git
-cd zarb-table-game
+git clone https://github.com/MAPSIM-co/Mapsim_chat.git
+cd Mapsim_chat
 ```
-- OR
-  
-If You Can Update Your Existing Repository :
+
+- If you already have it locally, just pull
 
 ```bash
-cd ~/zarb-table-game
+cd ~/Mapsim_chat
 git pull
 ```
 
-Install Python Virtual Environment
+---
+
+### Step 2: Create and activate a Python virtual environment
+
+#### Install Python & Virtual Environment
+
+* Install Python:
+
+##### Linux / macOS
 
 ```bash
-sudo apt update
-sudo apt install -y python3-venv
-
-```
-- OR (if you want Python 3.10 specifically)
-
-```bash
-sudo apt install -y python3.10-venv
+sudo apt install -y python3-venv python3-pip
 ```
 
-### Step 2: Create and activate a virtual environment
-
-#### Linux / macOS
+##### Activation Environment
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-```
-#### Windows (PowerShell)
 
-```bash
+```
+
+##### Windows (PowerShell)
+
+```powershell
 python -m venv venv
 .\venv\Scripts\activate
-```
-⚠️ Make sure your virtual environment is activated. Your terminal should show (venv) at the beginning of the prompt.
 
+```
+
+> ⚠️ Make sure your virtual environment is activated. Your terminal should show `(venv)`.
+
+---
 
 ### Step 3: Install dependencies
 
-- Install  `requirements.txt` In Your OS :
+```bash
+pip install --upgrade pip
+```
 
 ```bash
 pip install -r requirements.txt
 ```
 
+---
+
 ### Step 4: Verify required folders and files
 
-Make sure the following folders exist:
+Ensure these folders exist:
+- `uploads/`
+- `app/static/`
 
-
-- static/
-- admin/
-- Dashboard/
-- practice/
-- report-ui/
-
-
-* Also ensure static/rewards.json exists. If not, create an empty JSON array:
+> If `uploads/` doesn't exist, create it: 
 
 ```bash
-[]
-
+mkdir uploads
 ```
-OR
-
-```bash
-[
-    {
-        "name": "Reward Name1",
-        "desc": "Description Reward1"
-    },
-    {
-        "name": "Reward Name2",
-        "desc": "Description Reward2"
-    }
-]
-```
-
-### Step 5: Run the server
-
-Navigate to the folder where ""main.py"" is located and run:
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-* Open browser: http://127.0.0.1:8000
-* For remote VPS, replace 127.0.0.1 with your VPS IP Or Your Computer Network
 
 ---
 
-## ⚙️ Make Service File
+### Step 5: Run the server
+
+Navigate to the folder containing `main.py`:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+- Open browser: `http://127.0.0.1:8000`  
+- For remote VPS: replace `127.0.0.1` with your VPS IP
+
+---
+
+## ⚙️ Run as Systemd Service (Optional)
+
+
 ```bash
 chmod +x setup_service.sh
 sudo ./setup_service.sh
 ```
 Managment Command :
 
-### Status Service
+### * Status Service
 
 ```bash
-systemctl status zarb-table-game
+systemctl status Mapsim_chat
 ```
-### Restart Service
+### * Restart Service
 
 ```bash
-systemctl restart zarb-table-game
+systemctl restart Mapsim_chat
 ```
-### Stop Service
+### * Stop Service
 
 ```bash
-systemctl stop zarb-table-game
+systemctl stop Mapsim_chat
 ```
-### Log View Service
+### * Log View Service
 
 ```bash
-journalctl -u zarb-table-game -f
+journalctl -u Mapsim_chat -f
 ```
 ---
+
 ## ▶️ Access UI & APIs
 
-* Admin UI: http://127.0.0.1:8000/admin/panel.html
+- Global Chat UI: `http://<VPS-IP>:8000/static/index.html`
 
-### Make Admin
+### Show Data In DB
 
-* First CTRL+C (For Stop Server)
+1. Stop the server (CTRL+C) and run:
 
-RUN:
+**Show Data From DB :**
+
+2. Run `s_db.py` For Show Your Data In The DB
+
 ```bash
-python add_admin.py
+python s_db.py
+
 ```
-
-Now :
-
-* Your username = `admin`
-* Your password = `admin` 
-
-👑 You Can Make `New User` And Visit `Report` User
-
-
-
-Dashboard: http://127.0.0.1:8000/dashboard/index.html
-
 ---
 
-## 📡 API Reference – Zarb Table Game
+## ⚡ API Reference – Mapsim Chat
 
-### 1️⃣ Multiplayer Game APIs
+### 1️⃣ Authentication
 
-| Endpoint | Method | Description | Request Parameters | Response Example |
-|----------|--------|-------------|------------------|-----------------|
-| `/start` | POST | Start a multiplayer game | `{"players":["alice","bob"], "families":[2,3,4], "questions":10, "time":20}` | `{"status":"started"}` |
-| `/question` | GET | Get the current question | None | `{"end": false, "question":"2x3", "player":"alice", "number":1, "total":10, "scores":{"alice":0,"bob":0}, "time":20}` |
-| `/answer` | POST | Submit an answer | `{"player":"alice", "question":"2x3", "answer":6}` | `{"correct": true, "scores":{"alice":1,"bob":0}}` |
-| `/finish` | POST | Finish the game and save results | `{"players":["alice","bob"], "scores":{"alice":5,"bob":4}}` | `{"status":"ok"}` |
+| Endpoint | Method | Description | Request |
+|----------|--------|-------------|---------|
+| `/register/` | POST | Register a new user | `username`, `password`, `email` (optional) |
+| `/login/` | POST | Login and get JWT token | `username`, `password` |
+
+### 2️⃣ Messages
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/messages/?chat_id=global` | GET | Get messages for chat (`global` or private chat name) |
+| `/upload/` | POST | Upload a file (returns `file_url`) |
+
+### 3️⃣ WebSocket
+
+| Endpoint | Description |
+|----------|-------------|
+| `/ws` | Connect WebSocket with JWT token and chat_name |
+
+**Example WebSocket URL:**
+
+```
+ws://127.0.0.1:8000/ws?token=<JWT_TOKEN>&chat_name=global
+```
+
+**Message format (JSON):**
+
+- Text message:
+
+```json
+{
+  "type": "text",
+  "text": "<encrypted_text>",
+  "chat_name": "global"
+}
+```
+
+- File message:
+
+```json
+{
+  "type": "file",
+  "text": "/uploads/<filename>",
+  "chat_name": "global"
+}
+```
 
 ---
-
-### 2️⃣ Practice Mode APIs
-
-| Endpoint | Method | Description | Request Parameters | Response Example |
-|----------|--------|-------------|------------------|-----------------|
-| `/practice/start` | POST | Start a practice session | `{"player":"john", "families":[2,3,4], "questions":10, "time":20}` | `{"status":"practice_started", "questions":[{"a":2,"b":3,"answer":6}, ...]}` |
-| `/practice/answer` | POST | Submit answer in practice mode | `{"player":"john", "question":"2x3", "answer":6}` | `{"correct": true, "correct_answer":6, "scores":{"john":1}}` |
-| `/api/practice-players` | GET | List all players who practiced | None | `["john","alice"]` |
-| `/api/practice/stats/{player}` | GET | Practice stats (correct/wrong) | `player` (str) | `{"correct":5,"wrong":3}` |
-| `/api/practice/wrong/{player}` | GET | List wrong answers of a player | `player` (str) | `[{"question":"3x7","answer":20}]` |
-| `/api/practice/questions-wrong` | GET | Questions with highest wrong count | None | `[{"question":"3x7","wrong_count":4}]` |
-
----
-
-### 3️⃣ Admin & Reports APIs
-
-| Endpoint | Method | Description | Request Parameters | Response Example |
-|----------|--------|-------------|------------------|-----------------|
-| `/admin/login` | POST | Admin login | `username`, `password` (form-data) | `{"success": true, "admin_id": 1, "is_superadmin": 1}` |
-| `/admin/add-player` | POST | Add a new player | `name` (form-data) | `{"success": true, "msg": "بازیکن ثبت شد!"}` |
-| `/admin/add-admin` | POST | Add new admin (requires superadmin) | `username`, `password`, `is_superadmin` (0/1), `current_admin_id` | `{"success": true, "msg": "ادمین جدید ثبت شد!"}` |
-| `/api/players` | GET | List all registered players | None | `["alice","bob"]` |
-| `/api/wrong/{player}` | GET | Wrong answers of a player | `player` (str) | `[{"question":"2x3","answer":5}]` |
-| `/api/stats/{player}` | GET | Correct & wrong count | `player` (str) | `{"correct":5,"wrong":3}` |
-| `/api/questions-wrong` | GET | Questions with highest wrong count | None | `[{"question":"3x7","wrong_count":4}]` |
-| `/api/wrong-stats/{player}` | GET | Number of wrong answers per question for a player | `player` (str) | `[{"question":"3x7","wrong_count":2}]` |
-| `/api/right-stats/{player}` | GET | Number of correct answers per question for a player | `player` (str) | `[{"question":"2x3","right_count":3}]` |
-
-
-## Example: Start a Practice Session
-
-Curl Examples:
-
-### Start game
-
-```bash
-curl -X POST "http://127.0.0.1:8000/start" \
--H "Content-Type: application/json" \
--d '{"players":["alice","bob"],"families":[2,3,4],"questions":10,"time":20}'
-```
-
-### Get question
-
-```bash
-curl "http://127.0.0.1:8000/question"
-```
-
-### Submit answer
-
-```bash
-curl -X POST "http://127.0.0.1:8000/answer" \
--H "Content-Type: application/json" \
--d '{"player":"alice","question":"2x3","answer":6}'
-```
-### Finish game
-
-```bash
-curl -X POST "http://127.0.0.1:8000/finish" \
--H "Content-Type: application/json" \
--d '{"players":["alice","bob"],"scores":{"alice":5,"bob":4}}'
-```
-### Start a Multiplayer Game
-
-```bash
-curl -X POST "http://127.0.0.1:8000/practice/start" \
--H "Content-Type: application/json" \
--d '{"player":"john","families":[2,3,4],"questions":10,"time":20}'
-```
 
 ## 🗂️ Database
 
-SQLite database game.db is automatically created on first run.
-  - Tables:
-    * players → registered players
-    * admins → admin users
-    * results → game scores
-    * answers → all submitted answers
-    * practice_answers → answers from practice mode
+SQLite database `chat.db` is automatically created on first run.
+- Tables:
+  - `users` → registered users
+  - `chats` → chat rooms
+  - `chat_members` → members of private chats
+  - `messages` → all messages
 
-## 🔐 Admin Management
 
-  * Login
-    * POST /admin/login
-    * Form Data:
-      - username
-      - password
-  * Add Admin (requires superadmin)
-    * POST /admin/add-admin
-    * Form Data:
-      - username
-      - password
-      - is_superadmin (0 or 1)
-      - current_admin_id (your admin id)
-  * Add Player
-    * POST /admin/add-player
-    * Form Data:
-      - name
+---
 
-## 📊 Reports & Stats
+## 🌐 Frontend
+* Login and registration forms
+* Chat UI with message bubbles
+* File uploads (images, videos, PDFs)
+* Online users list
+* Private chat support (Coming Soon)
+* E2EE encryption for all text messages
 
-- `/api/players → List all players`
-- `/api/wrong/{player} → Wrong answers of a player`
-- `/api/stats/{player} → Correct & wrong count`
-- `/api/questions-wrong → Questions with highest wrong count`
-- `/api/practice-players → Practice mode players`
-- `/api/practice/stats/{player} → Practice stats`
+---
+
+## 🔐 Security
+- JWT authentication
+- End-to-end encryption with libsodium
+- Files stored in uploads/
+- User `passwords` hashed with `pbkdf2_sha256` (macOS) or bcrypt (other OS)
+
+---
+
+## 📡 Notes for VPS Deployment
+1. Make sure Python 3.8+ is installed.
+2. Make uploads/ folder writable by the server user.
+3. Use Uvicorn or Gunicorn with ASGI for production.
+4. Optional: run as systemd service:
+
+* Example:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+---
 
 ## 📝 Contributing
+
 Contributions are welcome! Feel free to open issues or submit pull requests.
 
+---
+
 ## 📜 License
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE.txt) file for details.
+
+This project is licensed under the MIT License. See [LICENSE](./LICENSE.txt) for details.
+
