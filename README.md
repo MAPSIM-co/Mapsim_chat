@@ -229,6 +229,38 @@ journalctl -u Mapsim_chat_auto_clear_uploads -f
 
 ---
 
+## Change Port Service
+
+1. Edit `Mapsim_chat.service` File
+```bash
+nano /etc/systemd/system/Mapsim_chat.service
+```
+2. Find This Line :
+
+**`ExecStart=/root/Mapsim_chat/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000`**
+
+And Change To (YOUR-PORT):
+
+**`ExecStart=/root/Mapsim_chat/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port`** ****<span style="color:red;">8001</span>****
+
+
+3. Reload Services
+   
+```bash
+systemctl daemon-reload
+```
+
+4. Restart Services
+   
+```bash
+systemctl restart Mapsim_chat
+```
+
+5. Check Service Status
+   
+```bash
+systemctl status Mapsim_chat
+```
 
 ## ▶️ Access UI & APIs
 
