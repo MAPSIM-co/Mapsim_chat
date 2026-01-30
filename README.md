@@ -132,12 +132,37 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## ⚙️ Run as Systemd Service (Optional)
 
+1. Active Service Mapsim chat
+
+```bash
+cd /root/Mapsim_chat
+```
+If Your User `root` :
+```bash
+chmod +x setup_service.sh
+./setup_service.sh
+```
+If Other User :
 
 ```bash
 chmod +x setup_service.sh
 sudo ./setup_service.sh
 ```
-And 
+
+2.Active Service Auto Clear Uploads (ACU)
+
+
+```bash
+chmod +x auto_clear_uploads.sh
+sudo ./auto_clear_uploads.sh
+```
+
+If Your User `root` :
+```bash
+chmod +x auto_clear_uploads.sh
+./auto_clear_uploads.sh
+```
+If Other User :
 
 ```bash
 chmod +x auto_clear_uploads.sh
