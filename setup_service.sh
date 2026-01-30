@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="Mapsim_chat"
-APP_DIR="/home/ubuntu/Mapsim_chat"  # مسیر پروژه روی VPS
+APP_DIR="/root/Mapsim_chat"   # مسیر پروژه روی VPS
 VENV_PATH="$APP_DIR/venv"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
 
