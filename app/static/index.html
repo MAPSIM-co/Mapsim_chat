@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebChat</title>
+
+    <!-- VERY IMPORTANT FOR MOBILE -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-section" class="auth">
+    <h2>ورود به چت</h2>
+    <input id="login-username" placeholder="نام کاربری">
+    <input id="login-password" placeholder="رمز عبور" type="password">
+    <button onclick="login()">ورود</button>
+    <p>یا <a onclick="showRegister()">ثبت‌نام</a></p>
+</div>
+
+<!-- REGISTER -->
+<div id="register-section" class="auth" style="display:none;">
+    <h2>ثبت‌نام</h2>
+    <input id="reg-username" placeholder="نام کاربری">
+    <input id="reg-password" placeholder="رمز عبور" type="password">
+    <input id="reg-email" placeholder="ایمیل (اختیاری)" type="email">
+    <button onclick="register()">ثبت‌نام</button>
+    <p>حساب دارید؟ <a href="#" onclick="showLogin()">بازگشت به ورود</a></p>
+</div>
+
+<!-- CHAT -->
+<div id="chat-section" style="display:none;">
+    <div class="chat-container">
+        <div class="chat-header">
+            <img src="/static/whatsapp-icon.png" alt="Logo" class="chat-logo">
+            <span class="chat-title">Madol Chat</span>
+            <span class="chat-user" id="chat-user"></span>
+            <button type="button" onclick="logout()" title="خروج" style="margin-right:10px; background:none; border:none; color:#fff; font-size:1.1em; cursor:pointer;">خروج</button>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="input-box">
+            <input id="message-input" type="text"
+                   placeholder="پیام..."
+                   autocomplete="off"
+                   onkeypress="if(event.key==='Enter'){sendMessage()}">
+            <input type="file" id="file-input">
+            <button onclick="sendMessage()" title="ارسال پیام">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="#25d366"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- کتابخانه‌های محلی -->
+<script src="/static/sodium.min.js"></script>
+<script src="/static/axios.min.js"></script>
+
+<!-- کدهای ماژول خودمان -->
+<script type="module" src="/static/crypto-e2ee.js"></script>
+<script type="module" src="/static/chat.js"></script>
+
+
+
+
+</body>
+</html>
