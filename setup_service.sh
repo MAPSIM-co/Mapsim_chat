@@ -14,13 +14,15 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Check uvicorn
-if [ ! -x "$VENV_PATH/bin/uvicorn" ]; then
+# 2. Check uvicorn (existence only)
+if [ ! -f "$VENV_PATH/bin/uvicorn" ]; then
   echo "❌ uvicorn not found at $VENV_PATH/bin/uvicorn"
+  echo "Listing venv/bin:"
+  ls -l "$VENV_PATH/bin" || true
   exit 1
 fi
 
-echo "✅ venv & uvicorn detected"
+echo "✅ uvicorn found in venv"
 
 # 3. Create systemd service
 cat <<EOF > "$SERVICE_FILE"
@@ -29,6 +31,7 @@ Description=Mapsim Chat FastAPI Service
 After=network.target
 
 [Service]
+Type=simple
 User=root
 WorkingDirectory=$APP_DIR
 ExecStart=$VENV_PATH/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
