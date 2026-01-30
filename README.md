@@ -149,7 +149,7 @@ chmod +x setup_service.sh
 sudo ./setup_service.sh
 ```
 
-2.Active Service Auto Clear Uploads (ACU)
+2. Active Service Auto Clear Uploads (ACU)
 
 
 ```bash
