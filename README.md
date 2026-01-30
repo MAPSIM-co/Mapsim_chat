@@ -137,6 +137,12 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 chmod +x setup_service.sh
 sudo ./setup_service.sh
 ```
+And 
+
+```bash
+chmod +x auto_clear_uploads.sh
+sudo ./auto_clear_uploads.sh
+```
 Managment Command :
 
 ### * Status Service
@@ -144,15 +150,24 @@ Managment Command :
 ```bash
 systemctl status Mapsim_chat
 ```
+```bash
+systemctl status Mapsim_chat_auto_clear_uploads
+```
 ### * Restart Service
 
 ```bash
 systemctl restart Mapsim_chat
 ```
+```bash
+systemctl restart Mapsim_chat_auto_clear_uploads
+```
 ### * Stop Service
 
 ```bash
 systemctl stop Mapsim_chat
+```
+```bash
+systemctl stop Mapsim_chat_auto_clear_uploads
 ```
 ### * Log View Service
 
