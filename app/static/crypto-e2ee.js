@@ -61,7 +61,7 @@ export async function decryptMessage(payload) {
     //console.log("[E2EE] decrypt called with:", payload);
 
     if (!GLOBAL_KEY) {
-        console.warn("[E2EE] no global key");
+        //console.warn("[E2EE] no global key");
         return "(رمزنگشایی نشد)";
     }
 
@@ -77,7 +77,7 @@ export async function decryptMessage(payload) {
         //console.log("[E2EE] decrypt success");
         return sodium.to_string(plain);
     } catch (e) {
-        console.error("[E2EE] decrypt failed:", e);
+        //console.error("decrypt failed:", e);
         return "(رمزنگشایی نشد)";
     }
 }
