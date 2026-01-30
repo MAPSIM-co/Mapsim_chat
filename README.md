@@ -174,15 +174,15 @@ This service automatically:
 ### If you are **root user**
 ```bash
 cd /root/Mapsim_chat
-chmod +x auto_clear_service.sh
-./auto_clear_service.sh
+chmod +x auto_clear_uploads.sh
+./auto_clear_uploads.sh
 ```
 
 ### If you are **NOT root**
 ```bash
 cd /root/Mapsim_chat
-chmod +x auto_clear_service.sh
-sudo ./auto_clear_service.sh
+chmod +x auto_clear_uploads.sh
+sudo ./auto_clear_uploads.sh
 ```
 
 ---
