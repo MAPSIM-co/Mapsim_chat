@@ -91,10 +91,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
     # ابتدا JWT را بررسی می‌کنیم
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("[WebSocket] JWT payload:", payload)
+        #print("[WebSocket] JWT payload:", payload)
         username = payload.get("username")
         if not username:
-            print("[WebSocket] JWT payload missing 'username'.")
+            #print("[WebSocket] JWT payload missing 'username'.")
             await websocket.close(code=4003)
             return
     except JWTError as e:
