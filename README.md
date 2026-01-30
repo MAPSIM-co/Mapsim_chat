@@ -130,76 +130,105 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ---
 
-## ⚙️ Run as Systemd Service (Optional)
+## ⚙️ Run as systemd Services (Optional)
 
-1. Active Service Mapsim chat
+This project can be deployed as **two systemd services** for production use:
 
+1. **Main FastAPI Service** → `Mapsim_chat`
+2. **Auto Clear Uploads Service** → `Mapsim_chat_auto_clear_uploads`
+
+> ⚠️ **Important Notes**
+>
+> - Project path: `/root/Mapsim_chat`
+> - Setup scripts **must be executed as root**
+> - Do **NOT** manually activate virtualenv
+> - Do **NOT** use `sudo` if you are already logged in as `root`
+
+---
+
+## 1️⃣ Enable Main Service (Mapsim_chat)
+
+### If you are **root user**
 ```bash
 cd /root/Mapsim_chat
-```
-If Your User `root` :
-```bash
 chmod +x setup_service.sh
 ./setup_service.sh
 ```
-If Other User :
 
+### If you are **NOT root**
 ```bash
+cd /root/Mapsim_chat
 chmod +x setup_service.sh
 sudo ./setup_service.sh
 ```
 
-2. Active Service Auto Clear Uploads (ACU)
+---
 
+## 2️⃣ Enable Auto Clear Uploads Service (ACU)
 
+This service automatically:
+- Monitors the `uploads/` directory size
+- Clears uploaded files when the size limit is exceeded
+- Deletes all records from the `messages` table in SQLite
+
+### If you are **root user**
 ```bash
-chmod +x auto_clear_uploads.sh
-sudo ./auto_clear_uploads.sh
+cd /root/Mapsim_chat
+chmod +x setup_auto_clear_service.sh
+./setup_auto_clear_service.sh
 ```
 
-If Your User `root` :
+### If you are **NOT root**
 ```bash
-chmod +x auto_clear_uploads.sh
-./auto_clear_uploads.sh
+cd /root/Mapsim_chat
+chmod +x setup_auto_clear_service.sh
+sudo ./setup_auto_clear_service.sh
 ```
-If Other User :
 
-```bash
-chmod +x auto_clear_uploads.sh
-sudo ./auto_clear_uploads.sh
-```
-Managment Command :
+---
 
-### * Status Service
+## 🛠 Service Management Commands
 
+### 🔍 Check service status
 ```bash
 systemctl status Mapsim_chat
-```
-```bash
 systemctl status Mapsim_chat_auto_clear_uploads
 ```
-### * Restart Service
 
+---
+
+### 🔄 Restart services
 ```bash
 systemctl restart Mapsim_chat
-```
-```bash
 systemctl restart Mapsim_chat_auto_clear_uploads
 ```
-### * Stop Service
 
+---
+
+### ⛔ Stop services
 ```bash
 systemctl stop Mapsim_chat
-```
-```bash
 systemctl stop Mapsim_chat_auto_clear_uploads
 ```
-### * Log View Service
 
+---
+
+### 📜 View service logs (live)
 ```bash
 journalctl -u Mapsim_chat -f
+journalctl -u Mapsim_chat_auto_clear_uploads -f
 ```
 ---
+
+### ✅ Behavior Summary
+
+- Both services start automatically after server reboot
+- systemd manages process lifecycle and restarts
+- Virtual environment is handled internally
+- No manual background process management is required
+
+---
+
 
 ## ▶️ Access UI & APIs
 
