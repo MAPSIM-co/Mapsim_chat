@@ -17,8 +17,8 @@
     <h2>ورود به چت</h2>
     <input id="login-username" placeholder="نام کاربری">
     <input id="login-password" placeholder="رمز عبور" type="password">
-    <button onclick="login()">ورود</button>
-    <p>یا <a onclick="showRegister()">ثبت‌نام</a></p>
+    <button id="loginBtn">ورود</button>
+    <p>یا <a id="showRegister">ثبت‌نام</a></p>   
 </div>
 
 <!-- REGISTER -->
@@ -40,21 +40,29 @@
             <span class="chat-user" id="chat-user"></span>
             <button type="button" onclick="logout()" title="خروج" style="margin-right:10px; background:none; border:none; color:#fff; font-size:1.1em; cursor:pointer;">خروج</button>
         </div>
+        <div id="online-users-container" style="border-bottom:1px solid #ccc; padding:5px; max-height:50px; overflow-x:auto; display:flex; gap:8px; align-items:center;">
+        <!-- کاربران آنلاین اینجا نمایش داده می‌شوند -->
+        </div>
         <div id="messages" class="messages"></div>
         <div class="input-box">
             <input id="message-input" type="text"
-                   placeholder="پیام..."
-                   autocomplete="off"
-                   onkeypress="if(event.key==='Enter'){sendMessage()}">
+                placeholder="پیام..."
+                autocomplete="off"
+                onkeypress="if(event.key==='Enter'){sendMessage()}">
             <input type="file" id="file-input">
-            <button onclick="sendMessage()" title="ارسال پیام">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="#25d366"/>
-                </svg>
+            <button id="sendBtn" title="ارسال پیام">
+                <span class="btn-text">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="#fff"/>
+                    </svg>
+                </span>
+                <span class="btn-spinner"></span>
+                <span class="btn-percent"></span>
             </button>
         </div>
     </div>
 </div>
+
 
 <!-- کتابخانه‌های محلی -->
 <script src="/static/sodium.min.js"></script>
