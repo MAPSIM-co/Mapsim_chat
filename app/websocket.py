@@ -1,3 +1,4 @@
+#app/websocket.py
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException
 from jose import jwt, JWTError, ExpiredSignatureError
 import json
@@ -74,41 +75,58 @@ def save_message(chat_id: int, user_id: int, msg_type: str, content: str):
     conn.commit()
     conn.close()
 
-async def broadcast_online_users():
-    """ارسال لیست آنلاین‌ها به همه کاربران global"""
+async def broadcast_online_users(exclude_ws=None):
     data = {"type": "online_users", "users": list(online_users.values())}
     for ws_list in clients.get("global", {}).values():
         for ws in ws_list:
-            await ws.send_text(json.dumps(data))
+            if ws != exclude_ws:  # به ws مشخص شده ارسال نشود
+                await ws.send_text(json.dumps(data))
 
 # ================== WEBSOCKET ==================
 
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket, token: str = Query(...), chat_name: str = Query("global")):
+   # print("🔹 WebSocket جدید وصل شد, token =", token, "chat_name =", chat_name)
+
     try:
         user_id, username = verify_token(token)
-    except HTTPException:
+    except Exception as e:
+        #print("🔹 Token نامعتبر:", e)
         await ws.close(code=4003)
         return
 
     await ws.accept()
+    #print(f"🔹 WebSocket accepted برای {username}, chat_name={chat_name}")
 
     # ثبت کاربر در online_users
     online_users[user_id] = username
-    await broadcast_online_users()
+    # 1️⃣ ارسال آنلاین‌ها به خودش
+    await ws.send_text(json.dumps({
+        "type": "online_users",
+        "users": list(online_users.values())
+    }))
+
+    # 2️⃣ سپس اطلاع به دیگران
+    await broadcast_online_users(exclude_ws=ws)
+
+    
+
+    
+
+    
 
     # تعیین chat_id
     if chat_name == "global":
         chat_id = "global"
     else:
-        # برای چت خصوصی، باید user_id هم در اعضا باشد
-        chat_id, chat_name = get_or_create_private_chat([user_id])  # در frontend user_ids دیگر هم باید ارسال شود
+        chat_id, chat_name = get_or_create_private_chat([user_id])
 
     if chat_id not in clients:
         clients[chat_id] = {}
     if user_id not in clients[chat_id]:
         clients[chat_id][user_id] = []
     clients[chat_id][user_id].append(ws)
+    #print(f"🔹 clients فعلی: {clients}")
 
     try:
         while True:
@@ -117,14 +135,12 @@ async def websocket_endpoint(ws: WebSocket, token: str = Query(...), chat_name: 
             msg_type = payload.get("type", "text")
             content = payload.get("text") or payload.get("file_path")
 
-            # چک عضویت برای chat خصوصی
             if chat_name != "global" and not check_membership(chat_id, user_id):
                 await ws.close(code=4003)
                 return
 
             save_message(chat_id, user_id, msg_type, content)
 
-            # ارسال پیام به همه اعضای chat
             for uid, ws_list in clients.get(chat_id, {}).items():
                 for client_ws in ws_list:
                     await client_ws.send_text(json.dumps({
