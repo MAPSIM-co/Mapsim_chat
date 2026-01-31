@@ -229,6 +229,52 @@ journalctl -u Mapsim_chat_auto_clear_uploads -f
 
 ---
 
+This service Manually:
+- Clean the `uploads/` directory size To ZIRO
+- Deletes all records from the `messages` table in SQLite
+
+1. Run Command:
+```bash
+chmod +x clear_data.py
+```
+2. 
+```bash
+python3 clear_data.py
+```
+- OR
+```bash
+python clear_data.py
+```
+
+Your OutPut :
+```bash
+🧹 Clearing uploads...
+✅ uploads cleared
+🧹 Clearing messages table...
+✅ messages table cleared
+```
+3. Check For `Uploads` Folder & DB Messages Table:
+
+* First Check Uploads Folder :
+
+```bash
+ls -lh uploads
+```
+* And Then DB : 
+
+```bash
+sqlite3 chat.db
+```
+In The sqlite :
+
+```bash
+SELECT COUNT(*) FROM messages;
+```
+If your Out Put = **0** Is ****OK**** ✅
+
+```bash
+.exit
+```
 ## Change Port Service
 
 1. Edit `Mapsim_chat.service` File
