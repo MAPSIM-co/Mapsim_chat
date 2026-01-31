@@ -13,19 +13,28 @@ function ub64(str) {
 
 
 // ================= init global key =================
-export async function initGlobalChatKey() {
-    await sodium.ready;
-    //console.log("[E2EE] sodium ready");
+export async function initGlobalChatKeyFromServer() {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token found in localStorage");
 
-    // 🔐 secret مشترک برای همه device ها
-    const GLOBAL_SECRET = "MADOL_GLOBAL_CHAT_v1";
+    const res = await fetch("/chat/key", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
 
-    GLOBAL_KEY = sodium.crypto_generichash(
-        32,
-        sodium.from_string(GLOBAL_SECRET)
-    );
+    if (!res.ok) {
+        throw new Error("Failed to fetch global chat key: " + res.status);
+    }
 
-    //console.log("[E2EE] global key derived, length:", GLOBAL_KEY.length);
+    const data = await res.json();
+
+    if (!data.key) throw new Error("No key received from server");
+
+    // ⚡ strip any whitespace or newline
+    const keyStr = data.key.trim();
+    GLOBAL_KEY = sodium.from_base64(keyStr);
+
+    // ⚡ برای دسترسی در console (فقط تست)
+    window.GLOBAL_KEY = GLOBAL_KEY;
 }
 
 
@@ -62,7 +71,7 @@ export async function decryptMessage(payload) {
 
     if (!GLOBAL_KEY) {
         //console.warn("[E2EE] no global key");
-        return "(رمزنگشایی نشد)";
+        return "(رمز گشایی نشد)";
     }
 
     try {
