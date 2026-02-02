@@ -7,7 +7,7 @@ Designed for developers who want **full control**, **transparent architecture**,
 
 ## 🚀 Demo
 
-**🔗 Demo can be deployed locally or on VPS after installation.**
+**🔗 Demo can be deployed locally or on VPS After installation.**
 
 ---
 
