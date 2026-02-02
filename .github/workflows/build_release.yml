@@ -27,12 +27,16 @@ jobs:
       # 4️⃣ ساخت باینری standalone
       - name: Build standalone binary
         run: |
-          pyinstaller --onefile main.py --name mapsim_chat
+          pyinstaller --onefile app/main.py --name mapsim_chat
           ls -lh dist/
+          # مطمئن شو فایل درست ساخته شده
+          if [ ! -f dist/mapsim_chat ]; then
+              mv dist/* dist/mapsim_chat
+          fi
 
-      # 5️⃣ آپلود مستقیم به Release (بدون artifact جداگانه)
+      # 5️⃣ آپلود مستقیم به Release
       - name: Upload binary to GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: dist/mapsim_chat*
+          artifacts: dist/mapsim_chat
           tag: ${{ github.event.release.tag_name }}
