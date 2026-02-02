@@ -268,7 +268,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_NAME=chatdb
 DB_USER=chatuser
-DB_PASS=YOUR_DB_PASSWORD_HERE  # فقط یک placeholder
+DB_PASS=YOUR_DB_PASSWORD_HERE  
 
 # -----------------------------
 # Encryption / keys
@@ -280,7 +280,7 @@ SECRET_KEY=YOUR_BASE64_MASTER_KEY_HERE
 # -----------------------------
 UPLOAD_DIR=uploads
 UPLOAD_MAX_SIZE_GB=3
-UPLOAD_CHECK_INTERVAL=14400  # seconds
+UPLOAD_CHECK_INTERVAL=14400  
 
 # -----------------------------
 # Debug / Environment
