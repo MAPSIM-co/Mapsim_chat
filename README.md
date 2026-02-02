@@ -1,25 +1,27 @@
 # Mapsim Chat
 
-A simple real-time chat application with end-to-end encryption (E2EE) for text and file messages.  
-Users can register, login, and chat globally or privately. No admin panel is included.
+A real-time chat application with strong security design, encrypted messaging, file sharing, and WebSocket-based communication.  
+Designed for developers who want **full control**, **transparent architecture**, and **self-hosted security**.
 
 ---
 
 ## 🚀 Demo
 
-🔗 **[Watch Demo](./#)**
+**🔗 Demo can be deployed locally or on VPS after installation.**
 
 ---
 
 ## 💡 Features
 
-- Global Chat Room
-- Private Chat Between Users
-- End-to-end Encryption For Messages
-- File Sharing (images, video, PDF, other)
-- JWT-based Authentication
-- Persistent Chat History In SQLite
-- Cross-platform: `Linux`, `macOS`, `Windows`
+- Global public chat room
+- Private chat (architecture ready)
+- Encrypted messages (runtime session key)
+- Secure file upload & download
+- JWT-based authentication
+- Key versioning system (server restart = new session key)
+- WebSocket real-time communication
+- MySQL database support
+- Linux / macOS / Windows
 
 ---
 
@@ -32,6 +34,80 @@ Users can register, login, and chat globally or privately. No admin panel is inc
 - Optional: Uvicorn (ASGI server)
 - JavaScript libs: libsodium for E2EE
 
+---
+
+## 🔐 Security Architecture (Important)
+
+### 1. Authentication
+- Users authenticate via **JWT**
+- JWT contains:
+  - user id (`sub`)
+  - username
+  - expiration (`exp`)
+- Signed with `SECRET_KEY` from `.env`
+
+### 2. Message Encryption Model
+- On **every server restart**:
+  - A new `GLOBAL_CHAT_KEY` is generated
+  - Encrypted using `SECRET_KEY`
+  - Stored in `key_versions` table
+- Old keys are **never deleted automatically**
+- This allows:
+  - Message recovery
+  - Key rotation
+  - Forward secrecy per session
+
+> ⚠️ This is **session-based encryption**, not Signal-style E2EE  
+> Server **cannot read messages without keys**, but keys exist encrypted in DB.
+
+---
+
+### 3. Files
+- Stored physically in `/uploads`
+- Paths stored in DB
+- Access controlled by WebSocket + JWT
+
+---
+## 🧠 Threat Model Summary
+
+| Threat | Status |
+|------|------|
+| Fake JWT | ❌ Blocked |
+| WebSocket hijack | ❌ Blocked |
+| Token replay | ❌ Expired |
+| DB leak | 🔒 Encrypted keys |
+| Server admin | ⚠️ Trusted |
+| MITM (no TLS) | ❌ Use HTTPS/WSS |
+
+---
+
+## 🗂 Project Structure
+
+```
+Mapsim_chat
+├─ .env
+├─ README.md
+├─ LICENSE.txt
+├─ requirements.txt
+├─ app/
+│  ├─ main.py
+│  ├─ config.py
+│  ├─ db.py
+│  ├─ auth.py
+│  ├─ websocket.py
+│  ├─ chat_keys.py
+│  └─ static/
+│     ├─ index.html
+│     ├─ chat.js
+│     ├─ crypto-e2ee.js
+│     ├─ sodium.min.js
+│     └─ style.css
+├─ uploads/
+├─ auto_clear_uploads.py
+├─ auto_clear_uploads.sh
+├─ clear_data.py
+└─ setup_service.sh
+```
 ---
 
 ## 📦 Installation & Setup
@@ -89,7 +165,6 @@ python -m venv venv
 
 > ⚠️ Make sure your virtual environment is activated. Your terminal should show `(venv)`.
 
----
 
 ### Step 3: Install dependencies
 
@@ -101,7 +176,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
----
 
 ### Step 4: Verify required folders and files
 
@@ -117,12 +191,107 @@ mkdir uploads
 
 ---
 
-### Step 5: Run the server
+## 🗄 Database Setup (MySQL – FULL)
 
-Navigate to the folder containing `main.py`:
+MySQL database `chatdb` is automatically created on first run.
+- Tables:
+  - `users` → registered users
+  - `chats` → chat rooms
+  - `chat_members` → members of private chats
+  - `messages` → all messages
+  - `files` → Upload file
+  - `key_versions` → Version key generate
 
+
+### 1. Install MySQL
+```bash
+sudo apt install mysql-server -y
+```
+
+### 2. Login
+```bash
+mysql -u root -p
+```
+
+### 3. Create Database & User
+```sql
+CREATE DATABASE chatdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER 'chatuser'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
+GRANT ALL PRIVILEGES ON chatdb.* TO 'chatuser'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 4. Verify
+```sql
+USE chatdb;
+SHOW TABLES;
+```
+
+> Tables are auto-created on first run
+
+### Other Databse Command For Use  
+
+  ```
+  mysql -u root -p
+
+  USE chatdb; 
+
+  SHOW TABLES;
+
+  SHOW CREATE TABLE <Table Name>;
+
+  SELECT * FROM <Table Name>;
+
+  TRUNCATE TABLE <Table Name>;
+  -OR-
+  DELETE FROM <Table Name>;
+
+  DROP TABLE <Table Name>;
+
+  DROP DATABASE chatdb;
+
+  CREATE DATABASE chatdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+  ```
+
+---
+## 🔑 Environment File (.env)
+
+Create `.env` in project root:
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=chatdb
+DB_USER=chatuser
+DB_PASS=STRONG_PASSWORD
+
+SECRET_KEY=BASE64_32_BYTE_KEY
+
+UPLOAD_DIR=uploads
+UPLOAD_MAX_SIZE_GB=3
+UPLOAD_CHECK_INTERVAL=14400
+DEBUG=false
+```
+
+Generate key:
+```bash
+python - <<EOF
+import base64, os
+print(base64.b64encode(os.urandom(32)).decode())
+EOF
+```
+
+
+## ▶️ Run Server
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Open:
+```
+http://127.0.0.1:8000/static/index.html
 ```
 
 - Open browser: `http://127.0.0.1:8000`  
@@ -192,7 +361,10 @@ sudo ./auto_clear_uploads.sh
 ### 🔍 Check service status
 ```bash
 systemctl status Mapsim_chat
-systemctl status Mapsim_chat_auto_clear_uploads
+```
+
+```bash
+systemctl status auto_clear_uploads
 ```
 
 ---
@@ -200,7 +372,10 @@ systemctl status Mapsim_chat_auto_clear_uploads
 ### 🔄 Restart services
 ```bash
 systemctl restart Mapsim_chat
-systemctl restart Mapsim_chat_auto_clear_uploads
+```
+
+```bash
+systemctl restart auto_clear_uploads
 ```
 
 ---
@@ -208,15 +383,16 @@ systemctl restart Mapsim_chat_auto_clear_uploads
 ### ⛔ Stop services
 ```bash
 systemctl stop Mapsim_chat
-systemctl stop Mapsim_chat_auto_clear_uploads
 ```
 
+```bash
+systemctl stop auto_clear_uploads
+```
 ---
 
 ### 📜 View service logs (live)
 ```bash
 journalctl -u Mapsim_chat -f
-journalctl -u Mapsim_chat_auto_clear_uploads -f
 ```
 ---
 
@@ -229,9 +405,13 @@ journalctl -u Mapsim_chat_auto_clear_uploads -f
 
 ---
 
-This service Manually:
+## 🧹 Manual Maintenance
+
 - Clean the `uploads/` directory size To ZIRO
-- Deletes all records from the `messages` table in SQLite
+- Deletes all records from the `messages` table 
+- Deletes all records from the `files` table 
+- Deletes all records from the `key_versions` table 
+
 
 1. Run Command:
 ```bash
@@ -247,11 +427,11 @@ python clear_data.py
 ```
 
 Your OutPut :
-```bash
-🧹 Clearing uploads...
-✅ uploads cleared
-🧹 Clearing messages table...
-✅ messages table cleared
+```
+uploads cleared
+messages cleared
+files cleared
+key_versions cleared
 ```
 3. Check For `Uploads` Folder & DB Messages Table:
 
@@ -263,18 +443,28 @@ ls -lh uploads
 * And Then DB : 
 
 ```bash
-sqlite3 chat.db
+mysql -u root -p
 ```
-In The sqlite :
+Entry your Password DB root User:
 
 ```bash
-SELECT COUNT(*) FROM messages;
+USE chatdb;
+SHOW TABLES;
+```
+In The MySQL DB :
+
+```bash
+SELECT * FROM messages;
 ```
 If your Out Put = **0** Is ****OK**** ✅
 
 ```bash
 .exit
 ```
+
+💡 You can use up command for another table ...
+---
+
 ## Change Port Service
 
 1. Edit `Mapsim_chat.service` File
@@ -312,18 +502,7 @@ systemctl status Mapsim_chat
 
 - Global Chat UI: `http://<VPS-IP>:8000/static/index.html`
 
-### Show Data In DB
 
-1. Stop the server (CTRL+C) and run:
-
-**Show Data From DB :**
-
-2. Run `s_db.py` For Show Your Data In The DB
-
-```bash
-python s_db.py
-
-```
 ---
 
 ## ⚡ API Reference – Mapsim Chat
@@ -376,51 +555,23 @@ ws://127.0.0.1:8000/ws?token=<JWT_TOKEN>&chat_name=global
 }
 ```
 
----
+## 🧪 Security Test Example
 
-## 🗂️ Database
-
-SQLite database `chat.db` is automatically created on first run.
-- Tables:
-  - `users` → registered users
-  - `chats` → chat rooms
-  - `chat_members` → members of private chats
-  - `messages` → all messages
-
-
----
-
-## 🌐 Frontend
-* Login and registration forms
-* Chat UI with message bubbles
-* File uploads (images, videos, PDFs)
-* Online users list
-* Private chat support (Coming Soon)
-* E2EE encryption for all text messages
-
----
-
-## 🔐 Security
-- JWT authentication
-- End-to-end encryption with libsodium
-- Files stored in uploads/
-- User `passwords` hashed with `pbkdf2_sha256` (macOS) or bcrypt (other OS)
-
----
-
-## 📡 Notes for VPS Deployment
-1. Make sure Python 3.8+ is installed.
-2. Make uploads/ folder writable by the server user.
-3. Use Uvicorn or Gunicorn with ASGI for production.
-4. Optional: run as systemd service:
-
-* Example:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+Fake token test:
+```js
+new WebSocket("ws://localhost:8000/ws?token=FAKE&chat_name=global")
 ```
+Expected:
+❌ Connection rejected
 
 ---
+
+## ⚖️ Comparison
+
+| App | This Project |
+|---|---|
+| Mapsim Chat | Transparent / Self-hosted |
+
 
 ## 📝 Contributing
 
@@ -431,42 +582,3 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 ## 📜 License
 
 This project is licensed under the MIT License. See [LICENSE](./LICENSE.txt) for details.
-
-
-```
-Mapsim_chat
-├─ .DS_Store
-├─ Dockerfile
-├─ LICENSE.txt
-├─ README.md
-├─ Temp.txt
-├─ app
-│  ├─ .DS_Store
-│  ├─ auth.py
-│  ├─ chat_keys.py
-│  ├─ chat_keys_old.py
-│  ├─ config.py
-│  ├─ create_db.py
-│  ├─ db.py
-│  ├─ main.py
-│  ├─ static
-│  │  ├─ .DS_Store
-│  │  ├─ axios.min.js
-│  │  ├─ chat.js
-│  │  ├─ crypto-e2ee.js
-│  │  ├─ index.html
-│  │  ├─ security.py
-│  │  ├─ sodium.min.js
-│  │  ├─ style.css
-│  │  └─ whatsapp-icon.png
-│  └─ websocket.py
-├─ auto_clear_uploads.py
-├─ auto_clear_uploads.sh
-├─ clear_data.py
-├─ favicon.ico
-├─ requirements.txt
-├─ setup_service.sh
-└─ uploads
-   └─ .DS_Store
-
-```
