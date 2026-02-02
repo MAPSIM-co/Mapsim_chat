@@ -1,6 +1,5 @@
 name: Build Mapsim Chat Binary
 
-# اجرا وقتی یک release جدید منتشر می‌شود
 on:
   release:
     types: [published]
@@ -10,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ چک کردن سورس از repo
+      # 1️⃣ چک کردن سورس
       - uses: actions/checkout@v4
 
       # 2️⃣ نصب Python
@@ -31,16 +30,9 @@ jobs:
           pyinstaller --onefile main.py --name mapsim_chat
           ls -lh dist/
 
-      # 5️⃣ آپلود باینری به عنوان artifact
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mapsim_chat
-          path: dist/mapsim_chat
-
-      # 6️⃣ آپلود به release GitHub
+      # 5️⃣ آپلود مستقیم به Release (بدون artifact جداگانه)
       - name: Upload binary to GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: dist/mapsim_chat
+          artifacts: dist/mapsim_chat*
           tag: ${{ github.event.release.tag_name }}
