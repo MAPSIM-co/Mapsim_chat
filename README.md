@@ -284,7 +284,8 @@ EOF
 ```
 
 * Copy <YOUR-Key> And Past To `SECRET_KEY=`
-For Example :
+
+- For Example :
 
 SECRET_KEY=**`k7z2Fz0x+Jz9oZB0X9c0Zp+6Zp0ZP4x1y1z4Y8k=`**
  
