@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
 import os
 import shutil
-import sqlite3
+from dotenv import load_dotenv
+from app.db import get_connection
 
-UPLOAD_DIR = "/root/Mapsim_chat/uploads"
-DB_FILE = "/root/Mapsim_chat/chat.db"
+# ================= ENV =================
+load_dotenv()
 
+def require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"[CLEAR_NOW] Missing env var: {name}")
+    return value
+
+
+UPLOAD_DIR = require_env("UPLOAD_DIR")
+
+if not os.path.isdir(UPLOAD_DIR):
+    raise RuntimeError(f"[CLEAR_NOW] UPLOAD_DIR does not exist: {UPLOAD_DIR}")
+
+# ================= LOGIC =================
 def clear_uploads():
-    print("🧹 Clearing uploads...")
-    if not os.path.exists(UPLOAD_DIR):
-        print("❌ uploads dir not found")
-        return
+    print("[CLEAR_NOW] Clearing uploads...")
 
     for name in os.listdir(UPLOAD_DIR):
         path = os.path.join(UPLOAD_DIR, name)
@@ -20,26 +31,57 @@ def clear_uploads():
             elif os.path.isdir(path):
                 shutil.rmtree(path)
         except Exception as e:
-            print(f"⚠️ Failed to delete {path}: {e}")
+            print(f"[CLEAR_NOW] Failed to delete {path}: {e}")
 
-    print("✅ uploads cleared")
+    print("[CLEAR_NOW] Uploads cleared")
+
 
 def clear_messages():
-    print("🧹 Clearing messages table...")
-    if not os.path.exists(DB_FILE):
-        print("❌ DB not found")
-        return
+    print("[CLEAR_NOW] Clearing messages table...")
 
     try:
-        conn = sqlite3.connect(DB_FILE, timeout=10)
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM messages")
         conn.commit()
+        cursor.close()
         conn.close()
-        print("✅ messages table cleared")
+        print("[CLEAR_NOW] Messages Table cleared")
     except Exception as e:
-        print(f"❌ DB error: {e}")
+        print(f"[CLEAR_NOW] DB error: {e}")
+
+
+def clear_files():
+    print("[CLEAR_NOW] Clearing files table...")
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM files")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("[CLEAR_NOW] Files Table cleared")
+    except Exception as e:
+        print(f"[CLEAR_NOW] DB error: {e}")
+
+def clear_KEY_version():
+    print("[CLEAR_NOW] Clearing KEY Versions table...")
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM key_versions")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("[CLEAR_NOW] KEY versions Table cleared")
+    except Exception as e:
+        print(f"[CLEAR_NOW] DB error: {e}")
+
 
 if __name__ == "__main__":
     clear_uploads()
     clear_messages()
+    clear_files()
+    clear_KEY_version()

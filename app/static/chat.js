@@ -1,7 +1,21 @@
 // app/static/chat.js
 
+// ================= DEBUG CONTROL =================
+const DEBUG = false;
+
+function log(...args) {
+    if (DEBUG) console.log(...args);
+}
+
+function error(...args) {
+    if (DEBUG) console.error(...args);
+}
+
+// ================= E2EE =========================
+
 import * as e2ee from "./crypto-e2ee.js";
 
+e2ee.__reset?.();
 let ws;
 let username = null;
 let token = null;
@@ -27,13 +41,21 @@ function registerSection(show) {
 
 // ================= Register =================
 async function register() {
-    const username = document.getElementById("reg-username").value;
+    const username = document.getElementById("reg-username").value.trim();
     const password = document.getElementById("reg-password").value;
-    const email = document.getElementById("reg-email").value;
+    const emailInput = document.getElementById("reg-email").value.trim();
+
+    const data = new URLSearchParams();
+    data.append("username", username);
+    data.append("password", password);
+
+    if (emailInput !== "") {
+        data.append("email", emailInput);
+    }
 
     const res = await fetch("/register/", {
         method: "POST",
-        body: new URLSearchParams({ username, password, email })
+        body: data
     });
 
     if (res.ok) {
@@ -44,6 +66,7 @@ async function register() {
         alert("Error: " + err.detail);
     }
 }
+
 
 // ================= Login =================
 async function login() {
@@ -99,19 +122,34 @@ function showChat() {
 
 // ================= Logout =================
 function logout() {
+    // --- auth ---
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+
+    // --- E2EE clean ---
+    sessionStorage.removeItem("GLOBAL_CHAT_KEY");
+    if (window.GLOBAL_KEY) {
+        window.GLOBAL_KEY = null;
+    }
+    if (typeof GLOBAL_KEY !== "undefined") {
+        GLOBAL_KEY = null;
+    }
+
     token = null;
     username = null;
+
+    // --- chat state ---
     currentChatName = "global";
     onlineUsers = [];
 
+    // --- websocket ---
     if (ws) {
         ws.onclose = null;
         ws.close();
         ws = null;
     }
 
+    // --- UI reset ---
     document.getElementById("messages").innerHTML = "";
     document.getElementById("message-input").value = "";
     document.getElementById("file-input").value = "";
@@ -144,7 +182,7 @@ async function loadMessages(chatName = currentChatName) {
 
 // ================= WebSocket =================
 function connectWS(chatName = currentChatName) {
-    console.log("در حال اتصال به WebSocket، chatName =", chatName); // 🔹 این خط برای دیبا
+    //console.log("در حال اتصال به WebSocket، chatName =", chatName); // 🔹 این خط برای دیبا
     if (!token) return;
 
     if (ws && ws.readyState === WebSocket.OPEN) ws.close();
@@ -156,7 +194,7 @@ function connectWS(chatName = currentChatName) {
         const msg = JSON.parse(e.data);
 
         if (msg.type === "online_users") {
-            console.log("کاربران آنلاین:", msg.users);
+            log("کاربران آنلاین:", msg.users);
             onlineUsers = msg.users;
             renderOnlineUsers();
         } else {
@@ -197,12 +235,15 @@ async function sendMessage() {
 
         try {
             const res = await axios.post("/upload/", fd, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 onUploadProgress: progressEvent => {
                     const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     btnPercent.textContent = percent + "%";
                 }
             });
-
+            
             // ارسال پیام فایل
             ws.send(JSON.stringify({
                 type: "file",
@@ -232,61 +273,96 @@ async function sendMessage() {
     }
 }
 // ================= Display Message =================
-function displayMessage(msg) {
+async function displayMessage(msg) {
     const messages = document.getElementById("messages");
     const wrap = document.createElement("div");
 
     wrap.className = "message " + (msg.username === username ? "me" : "other");
 
+    // ================= FILE =================
     if (msg.type === "file") {
-        let body = "";
-        const url = msg.text;
+        const fileUrl = msg.text;
 
-        // تصاویر
-        if (/\.(jpg|jpeg|png|gif|heic|jfif|bmp|tiff|svg)$/i.test(url)) {
-            body = `<img src="${url}" class="chat-image">`;
-        }
-        // ویدیوها
-        else if (/\.(mp4|mov|webm|ogg|avi|mkv|flv|wmv)$/i.test(url)) {
-            body = `<video class="chat-video" controls playsinline><source src="${url}"></video>`;
-        }
-        // صداها
-        else if (/\.(mp3|wav|aac|m4a|ogg|flac)$/i.test(url)) {
-            body = `<audio controls><source src="${url}"></audio>`;
-        }
-        // پی‌دی‌اف
-        else if (/\.pdf$/i.test(url)) {
-            body = `<div class="pdf-box">📄 <a href="${url}" target="_blank">View PDF</a></div>`;
-        }
-        // آرشیوها
-        else if (/\.(zip|rar|7z|tar|gz)$/i.test(url)) {
-            body = `<div class="archive-box">📦 <a href="${url}" target="_blank">Download Archive</a></div>`;
-        }
-        // فایل‌های متنی و دیگر فرمت‌ها
-        else {
-            body = `<a href="${url}" target="_blank">Download File</a>`;
-        }
+        wrap.innerHTML = `
+            <div class="sender">${msg.username}</div>
+            <div class="bubble">
+                <div class="file-loading">در حال بارگذاری فایل…</div>
+            </div>
+            <div class="time">${formatTime(msg.timestamp)}</div>
+        `;
 
-        wrap.innerHTML = `<div class="sender">${msg.username}</div>
-                          <div class="bubble">${body}</div>
-                          <div class="time">${formatTime(msg.timestamp)}</div>`;
         messages.appendChild(wrap);
         messages.scrollTop = messages.scrollHeight;
+
+        try {
+            const res = await axios.get(fileUrl, {
+                responseType: "blob",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            const blob = res.data;
+            const blobUrl = URL.createObjectURL(blob);
+            const mime = blob.type;
+
+            let body = "";
+
+            if (mime.startsWith("image/")) {
+                body = `<img src="${blobUrl}" class="chat-image">`;
+            } 
+            else if (mime.startsWith("video/")) {
+                body = `<video class="chat-video" controls playsinline>
+                            <source src="${blobUrl}">
+                        </video>`;
+            } 
+            else if (mime.startsWith("audio/")) {
+                body = `<audio controls>
+                            <source src="${blobUrl}">
+                        </audio>`;
+            } 
+            else if (mime === "application/pdf") {
+                body = `<div class="pdf-box">
+                            📄 <a href="${blobUrl}" target="_blank">View PDF</a>
+                        </div>`;
+            } 
+            else {
+                body = `<a href="${blobUrl}" download>⬇ Download File</a>`;
+            }
+
+            wrap.querySelector(".bubble").innerHTML = body;
+
+        } catch (err) {
+            console.error(err);
+            wrap.querySelector(".bubble").innerHTML =
+                "<span style='color:red'>❌ خطا در دریافت فایل</span>";
+        }
+
         return;
     }
 
-    // متن
-    wrap.innerHTML = `<div class="sender">${msg.username}</div>
-                      <div class="bubble"><div class="text-message">(در حال بارگذاری…)</div></div>
-                      <div class="time">${formatTime(msg.timestamp)}</div>`;
+    // ================= TEXT =================
+    wrap.innerHTML = `
+        <div class="sender">${msg.username}</div>
+        <div class="bubble">
+            <div class="text-message">(در حال بارگذاری…)</div>
+        </div>
+        <div class="time">${formatTime(msg.timestamp)}</div>
+    `;
+
     messages.appendChild(wrap);
     messages.scrollTop = messages.scrollHeight;
 
     e2ee.decryptMessage(msg.text)
-        .then(plain => wrap.querySelector(".bubble").innerHTML = `<div class="text-message">${plain}</div>`)
-        .catch(() => wrap.querySelector(".bubble").innerHTML = `<div class="text-message">(رمز گشایی نشد)</div>`);
+        .then(plain => {
+            wrap.querySelector(".bubble").innerHTML =
+                `<div class="text-message">${plain}</div>`;
+        })
+        .catch(() => {
+            wrap.querySelector(".bubble").innerHTML =
+                `<div class="text-message">(رمزگشایی نشد)</div>`;
+        });
 }
-
 
 // ================= Online Users =================
 function renderOnlineUsers() {
@@ -306,16 +382,24 @@ function startPrivateChat(otherUser) {
     connectWS(currentChatName);
 }
 
-// ================= Update Online Users =================
-function updateOnlineUsers(users) {
-    onlineUsers = users;
-    renderOnlineUsers();
-}
+// // ================= Update Online Users =================
+// function updateOnlineUsers(users) {
+//     onlineUsers = users;
+//     renderOnlineUsers();
+// }
 
 
 // ================= Helpers =================
 function formatTime(ts) {
-    return ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+    if (!ts) return "";
+
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return "";
+
+    return d.toLocaleTimeString("fa-IR", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
 }
 
 // ================= Expose to HTML =================
@@ -337,9 +421,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     username = localStorage.getItem("username");
     if (token && username) {
         try {
+            // 1️⃣ کلید GLOBAL_CHAT از سرور بگیریم
             await e2ee.initGlobalChatKeyFromServer();
+            
+            // 2️⃣ نمایش چت
             showChat();
-            loadMessages(currentChatName);
+            
+            // 3️⃣ load پیام‌ها
+            await loadMessages(currentChatName);
+
+            // 4️⃣ اتصال WebSocket
             connectWS(currentChatName);
         } catch (e) {
             console.error("E2EE init failed on restore:", e);

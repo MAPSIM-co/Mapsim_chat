@@ -1,50 +1,90 @@
 #!/usr/bin/env python3
 import os
 import shutil
-import sqlite3
 import time
+from dotenv import load_dotenv
+from app.db import get_connection
 
-UPLOAD_DIR = "/root/Mapsim_chat/uploads"   # مسیر پوشه uploads
-DB_FILE = "/root/Mapsim_chat/chat.db"      # مسیر دیتابیس SQLite
-MAX_SIZE_GB = 3                          # حداکثر حجم پوشه
-CHECK_INTERVAL = 14400                    # هر ۴ ساعت = 4*60*60 ثانیه
+# ================= ENV =================
+load_dotenv()
 
-def get_folder_size(folder):
+
+def require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"[AUTO_CLEAR] Missing required env var: {name}")
+    return value
+
+
+UPLOAD_DIR = require_env("UPLOAD_DIR")
+MAX_SIZE_GB = float(require_env("UPLOAD_MAX_SIZE_GB"))
+CHECK_INTERVAL = int(require_env("UPLOAD_CHECK_INTERVAL"))
+
+if not os.path.isdir(UPLOAD_DIR):
+    raise RuntimeError(f"[AUTO_CLEAR] UPLOAD_DIR does not exist: {UPLOAD_DIR}")
+
+# ================= LOGIC =================
+def get_folder_size_gb(folder: str) -> float:
     total_size = 0
-    for dirpath, dirnames, filenames in os.walk(folder):
+    for dirpath, _, filenames in os.walk(folder):
         for f in filenames:
             fp = os.path.join(dirpath, f)
             if os.path.isfile(fp):
                 total_size += os.path.getsize(fp)
     return total_size / (1024 ** 3)
 
+
 def clear_uploads():
-    for filename in os.listdir(UPLOAD_DIR):
-        file_path = os.path.join(UPLOAD_DIR, filename)
+    for name in os.listdir(UPLOAD_DIR):
+        path = os.path.join(UPLOAD_DIR, name)
         try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except:
-            pass  # کاملاً بدون پیام خطا
+            if os.path.isfile(path) or os.path.islink(path):
+                os.unlink(path)
+            elif os.path.isdir(path):
+                shutil.rmtree(path)
+        except Exception as e:
+            print(f"[AUTO_CLEAR] Failed to remove {path}: {e}")
+
 
 def clear_messages():
-    if not os.path.exists(DB_FILE):
-        return
     try:
-        conn = sqlite3.connect(DB_FILE)
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM messages")
         conn.commit()
+        cursor.close()
         conn.close()
-    except:
-        pass  # کاملاً بدون پیام خطا
+    except Exception as e:
+        print(f"[AUTO_CLEAR] Failed to clear messages: {e}")
 
+def clear_files():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM files")
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"[AUTO_CLEAR] Failed to clear files: {e}")
+
+
+# ================= MAIN LOOP =================
 if __name__ == "__main__":
+    print("[AUTO_CLEAR] Service started")
+
     while True:
-        size = get_folder_size(UPLOAD_DIR)
-        if size >= MAX_SIZE_GB:
-            clear_uploads()
-            clear_messages()
+        try:
+            size_gb = get_folder_size_gb(UPLOAD_DIR)
+            print(f"[AUTO_CLEAR] Uploads size: {size_gb:.2f} GB")
+
+            if size_gb >= MAX_SIZE_GB:
+                print("[AUTO_CLEAR] Limit reached → clearing uploads & messages & Files")
+                clear_uploads()
+                clear_messages()
+                clear_files()
+
+        except Exception as e:
+            print(f"[AUTO_CLEAR] Runtime error: {e}")
+
         time.sleep(CHECK_INTERVAL)

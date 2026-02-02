@@ -1,0 +1,65 @@
+ورود به MySQL
+mysql -u root -p
+
+انتخاب دیتابیس
+USE chatdb;
+
+دیدن همه جدول‌ها
+SHOW TABLES;
+
+دیدن ساختار جدول users
+DESCRIBE users;
+
+
+یا کامل‌تر:
+
+SHOW CREATE TABLE users;
+
+دیدن همه رکوردها
+SELECT * FROM users;
+
+فقط یوزرنیم‌ها
+SELECT id, username, email, created_at FROM users;
+
+پیدا کردن یوزر خاص (مثلاً mp)
+SELECT * FROM users WHERE username='mp';
+
+2️⃣ پاک کردن دیتا بدون حذف جدول (Safe)
+
+اگر فقط می‌خوای یوزرها پاک بشن:
+
+TRUNCATE TABLE users;
+
+
+یا:
+
+DELETE FROM users;
+DELETE FROM messages;
+DELETE FROM key_versions;
+DELETE FROM files;
+
+
+🔹 تفاوت:
+
+TRUNCATE سریع‌تر و ریست auto_increment
+
+DELETE کندتر ولی قابل rollback (در transaction)
+
+3️⃣ حذف کامل جدول‌ها (ولی دیتابیس بماند)
+DROP TABLE users;
+
+
+یا همه جدول‌ها:
+
+DROP TABLE users, messages, chats;
+
+
+(هر چی اسم جدول‌هات هست)
+
+4️⃣ حذف کامل دیتابیس (ریست کامل)
+DROP DATABASE chatdb;
+
+
+و دوباره ساختن:
+
+CREATE DATABASE chatdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

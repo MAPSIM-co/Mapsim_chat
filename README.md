@@ -432,3 +432,41 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 This project is licensed under the MIT License. See [LICENSE](./LICENSE.txt) for details.
 
+
+```
+Mapsim_chat
+├─ .DS_Store
+├─ Dockerfile
+├─ LICENSE.txt
+├─ README.md
+├─ Temp.txt
+├─ app
+│  ├─ .DS_Store
+│  ├─ auth.py
+│  ├─ chat_keys.py
+│  ├─ chat_keys_old.py
+│  ├─ config.py
+│  ├─ create_db.py
+│  ├─ db.py
+│  ├─ main.py
+│  ├─ static
+│  │  ├─ .DS_Store
+│  │  ├─ axios.min.js
+│  │  ├─ chat.js
+│  │  ├─ crypto-e2ee.js
+│  │  ├─ index.html
+│  │  ├─ security.py
+│  │  ├─ sodium.min.js
+│  │  ├─ style.css
+│  │  └─ whatsapp-icon.png
+│  └─ websocket.py
+├─ auto_clear_uploads.py
+├─ auto_clear_uploads.sh
+├─ clear_data.py
+├─ favicon.ico
+├─ requirements.txt
+├─ setup_service.sh
+└─ uploads
+   └─ .DS_Store
+
+```

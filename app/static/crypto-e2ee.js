@@ -1,5 +1,7 @@
 // app/static/crypto-e2ee.js
 
+const DEBUG = true; // جهت فعالسازی دیباگ کنسول
+
 const sodium = window.sodium;
 let GLOBAL_KEY = null;
 
@@ -12,10 +14,28 @@ function ub64(str) {
 }
 
 
+export function __reset() {
+    GLOBAL_KEY = null;
+    delete window.GLOBAL_KEY;
+}
 // ================= init global key =================
 export async function initGlobalChatKeyFromServer() {
+    await sodium.ready;
+
+    // 1️⃣ اگر قبلاً در RAM داریم
+    if (GLOBAL_KEY) return GLOBAL_KEY;
+
+    // 2️⃣ اگر در sessionStorage هست
+    const cached = sessionStorage.getItem("GLOBAL_CHAT_KEY");
+    if (cached) {
+        GLOBAL_KEY = sodium.from_base64(cached);
+        window.GLOBAL_KEY = GLOBAL_KEY; // فقط تست
+        return GLOBAL_KEY;
+    }
+
+    // 3️⃣ گرفتن از سرور
     const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token found in localStorage");
+    if (!token) throw new Error("No token found");
 
     const res = await fetch("/chat/key", {
         headers: { "Authorization": `Bearer ${token}` }
@@ -26,15 +46,21 @@ export async function initGlobalChatKeyFromServer() {
     }
 
     const data = await res.json();
-
     if (!data.key) throw new Error("No key received from server");
 
-    // ⚡ strip any whitespace or newline
     const keyStr = data.key.trim();
+
     GLOBAL_KEY = sodium.from_base64(keyStr);
 
-    // ⚡ برای دسترسی در console (فقط تست)
-    window.GLOBAL_KEY = GLOBAL_KEY;
+    // 4️⃣ ذخیره در sessionStorage
+    sessionStorage.setItem("GLOBAL_CHAT_KEY", keyStr);
+
+    // فقط برای debug
+    if (DEBUG) {
+        window.GLOBAL_KEY = GLOBAL_KEY;
+    }
+
+    return GLOBAL_KEY;
 }
 
 
@@ -67,12 +93,8 @@ export async function encryptMessage(text) {
 export async function decryptMessage(payload) {
     await sodium.ready;
 
-    //console.log("[E2EE] decrypt called with:", payload);
-
-    if (!GLOBAL_KEY) {
-        //console.warn("[E2EE] no global key");
-        return "(رمز گشایی نشد)";
-    }
+    // ⬅️ این خط کل مشکل را حل می‌کند
+    await initGlobalChatKeyFromServer();
 
     try {
         const { n, c } = JSON.parse(payload);
@@ -83,10 +105,8 @@ export async function decryptMessage(payload) {
             GLOBAL_KEY
         );
 
-        //console.log("[E2EE] decrypt success");
         return sodium.to_string(plain);
     } catch (e) {
-        //console.error("decrypt failed:", e);
-        return "(رمزنگشایی نشد)";
+        return "(رمزگشایی نشد)";
     }
 }
