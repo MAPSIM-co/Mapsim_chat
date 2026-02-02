@@ -261,18 +261,32 @@ SHOW TABLES;
 Create `.env` in project root:
 
 ```env
+# -----------------------------
+# Database config
+# -----------------------------
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_NAME=chatdb
 DB_USER=chatuser
-DB_PASS=STRONG_PASSWORD
+DB_PASS=YOUR_DB_PASSWORD_HERE  # فقط یک placeholder
 
-SECRET_KEY=BASE64_32_BYTE_KEY
+# -----------------------------
+# Encryption / keys
+# -----------------------------
+SECRET_KEY=YOUR_BASE64_MASTER_KEY_HERE
 
+# -----------------------------
+# Upload settings
+# -----------------------------
 UPLOAD_DIR=uploads
 UPLOAD_MAX_SIZE_GB=3
-UPLOAD_CHECK_INTERVAL=14400
+UPLOAD_CHECK_INTERVAL=14400  # seconds
+
+# -----------------------------
+# Debug / Environment
+# -----------------------------
 DEBUG=false
+
 ```
 
 Generate key:
@@ -469,7 +483,7 @@ If your Out Put = **0** Is ****OK**** ✅
 .exit
 ```
 
-💡 You can use up command for another table ...
+- 💡 You can use up command for another table ...
 ---
 
 ## Change Port Service
