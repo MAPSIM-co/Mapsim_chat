@@ -29,14 +29,15 @@ jobs:
         run: |
           pyinstaller --onefile app/main.py --name mapsim_chat
           ls -lh dist/
-          # مطمئن شو فایل درست ساخته شده
+          # اگر نام فایل متفاوت بود، rename کن
           if [ ! -f dist/mapsim_chat ]; then
               mv dist/* dist/mapsim_chat
           fi
 
-      # 5️⃣ آپلود مستقیم به Release
+      # 5️⃣ آپلود به Release با Personal Access Token
       - name: Upload binary to GitHub Release
         uses: ncipollo/release-action@v1
         with:
           artifacts: dist/mapsim_chat
           tag: ${{ github.event.release.tag_name }}
+          token: ${{ secrets.GH_RELEASE_TOKEN }}   # <--- اینجا secret را استفاده کن
