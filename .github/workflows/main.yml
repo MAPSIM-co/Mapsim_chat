@@ -10,53 +10,68 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+
     steps:
+      # 1️⃣ Checkout سورس
       - uses: actions/checkout@v4
 
+      # 2️⃣ نصب Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # 3️⃣ نصب dependencies و PyInstaller
       - name: Install dependencies
         run: |
+          set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
-          pip install requests
 
+      # 4️⃣ محاسبه version برای Release
       - name: Determine release version
         id: version
         run: |
-          echo "Checking latest release..."
-          LATEST=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | jq -r .tag_name)
-          if [ "$LATEST" = "null" ]; then
-              echo "No release found, using V1.0.0"
-              VERSION=V1.0.0
+          set -e
+          API="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
+
+          LATEST=$(curl -s "$API" | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get("tag_name", ""))
+except Exception:
+    print("")
+')
+
+          if [ -z "$LATEST" ]; then
+              VERSION="V1.0.0"
           else
-              echo "Latest release: $LATEST"
-              # نسخه patch را یکی افزایش بده، فرض: V1.0.0 -> V1.0.1
-              MAJOR=$(echo $LATEST | cut -d'.' -f1 | tr -d 'V')
-              MINOR=$(echo $LATEST | cut -d'.' -f2)
-              PATCH=$(echo $LATEST | cut -d'.' -f3)
-              PATCH=$((PATCH + 1))
+              MAJOR=$(echo "$LATEST" | cut -d"." -f1 | tr -d "V")
+              MINOR=$(echo "$LATEST" | cut -d"." -f2)
+              PATCH=$(echo "$LATEST" | cut -d"." -f3)
+              PATCH=$((PATCH+1))
               VERSION="V$MAJOR.$MINOR.$PATCH"
           fi
-          echo "Release version will be $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release version: $VERSION"
+
+      # 5️⃣ Build باینری standalone
       - name: Build standalone binary
         run: |
+          set -e
           pyinstaller --onefile app/main.py --name mapsim_chat
-          ls -lh dist/
-          BIN_FILE=$(ls dist | head -n 1)
-          echo "Binary file: $BIN_FILE"
+          test -f dist/mapsim_chat
+          ls -lh dist/mapsim_chat
 
-      - name: Create / Update GitHub Release
+      # 6️⃣ آپلود باینری به GitHub Release
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.version.outputs.version }}
           name: Mapsim Chat ${{ steps.version.outputs.version }}
           artifacts: dist/mapsim_chat
-          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          generateReleaseNotes: true
           skipIfReleaseExists: true
