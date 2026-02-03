@@ -8,16 +8,44 @@ from app.chat_keys import GLOBAL_CHAT_KEY
 from jose import jwt, JWTError
 from app.db import get_connection
 import os
+import sys
 import uuid
 import base64
 from datetime import datetime
-
+from dotenv import load_dotenv
 from nacl.secret import SecretBox
 from fastapi.responses import StreamingResponse
 import io
 
+# -----------------------------
+# Load .env
+# -----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+if getattr(sys, 'frozen', False):
+    # حالت PyInstaller باینری
+    base_dir = sys._MEIPASS
+    env_path = os.path.join(os.path.dirname(sys.executable), ".env")
+else:
+    base_dir = BASE_DIR
+    env_path = os.path.join(BASE_DIR, "..", ".env")
+
+load_dotenv(env_path)
+
+# -----------------------------
+# مسیر static
+# -----------------------------
+if getattr(sys, 'frozen', False):
+    static_path = os.path.join(sys._MEIPASS, "app", "static")
+else:
+    static_path = os.path.join(BASE_DIR, "static")
+
+# -----------------------------
+# مسیر uploads
+# -----------------------------
 UPLOAD_DIR = os.path.join(BASE_DIR, "..", "uploads")
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 # -----------------------------
 # 1️⃣ ساخت دیتابیس و جداول قبل از هر چیز
@@ -25,8 +53,7 @@ UPLOAD_DIR = os.path.join(BASE_DIR, "..", "uploads")
 from app.create_db import create_database
 create_database()
 
-# ----------------------------
-from app.chat_keys import GLOBAL_CHAT_KEY
+# -----------------------------
 from app.auth import register_user, authenticate_user, create_access_token, SECRET_KEY, ALGORITHM
 from app.websocket import router as chat_router
 # ----------------------------
@@ -42,15 +69,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Routers
 app.include_router(chat_router)
 
-# Mount استاتیک و uploads
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# Mount static
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+# دایرکتوری uploads را فقط بساز
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
-#app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
-
-# ========= دریافت پیام‌های قبلی =========
 
 # ========= دریافت پیام‌های قبلی =========
 @app.get("/messages/")
@@ -67,17 +94,15 @@ async def get_messages(token: str = Depends(oauth2_scheme), chat_id: str = "glob
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
-            # --------- تبدیل chat_id به عدد ----------
             if chat_id.isdigit():
                 real_chat_id = int(chat_id)
             else:
                 cursor.execute("SELECT id FROM chats WHERE name=%s", (chat_id,))
                 row = cursor.fetchone()
                 if not row:
-                    return {"messages": []}  # چت پیدا نشد
+                    return {"messages": []}
                 real_chat_id = row[0]
 
-            # --------- خواندن پیام‌ها ----------
             cursor.execute("""
                 SELECT m.id, u.username, m.type, m.content, m.timestamp
                 FROM messages m
@@ -98,38 +123,25 @@ async def get_messages(token: str = Depends(oauth2_scheme), chat_id: str = "glob
 # ========= آپلود فایل =========
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
-    """
-    آپلود یک فایل و رمزنگاری آن با GLOBAL_CHAT_KEY
-    ---
-    پارامترها:
-    - file: فایل آپلود شده
-    - token: JWT احراز هویت
-    """
-    # 🔐 احراز هویت
     try:
         jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # 👀 خواندن فایل
     raw = await file.read()
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    # 🔑 آماده کردن مسیر و شناسه فایل
     file_id = uuid.uuid4().hex
     enc_path = os.path.join(UPLOAD_DIR, f"{file_id}.enc")
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-    # 🔐 رمزنگاری با NaCl
     box = SecretBox(GLOBAL_CHAT_KEY)
     encrypted = box.encrypt(raw)
 
-    # 💾 ذخیره فایل رمزنگاری شده روی دیسک
     with open(enc_path, "wb") as f:
         f.write(encrypted)
 
-    # 🗄 ذخیره متادیتا در DB
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -141,7 +153,6 @@ async def upload_file(file: UploadFile = File(...), token: str = Depends(oauth2_
     finally:
         conn.close()
 
-    # 🔗 بازگرداندن لینک دانلود فایل رمزگشایی شده
     return {
         "file_id": file_id,
         "file_url": f"/file/{file_id}"
@@ -180,16 +191,11 @@ async def get_global_chat_key(token: str = Depends(oauth2_scheme)):
 # ========= رمز گشایی فایل=========
 @app.get("/file/{file_id}")
 async def download_file(file_id: str, token: str = Depends(oauth2_scheme)):
-    """
-    دریافت و رمزگشایی فایل با GLOBAL_CHAT_KEY
-    """
-    # 🔐 احراز هویت
     try:
         jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # 🗄 واکشی اطلاعات فایل از DB
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -206,7 +212,6 @@ async def download_file(file_id: str, token: str = Depends(oauth2_scheme)):
 
     original_name, mime_type, enc_path = row
 
-    # 🔐 خواندن و رمزنگاری فایل
     try:
         with open(enc_path, "rb") as f:
             encrypted = f.read()
@@ -215,7 +220,6 @@ async def download_file(file_id: str, token: str = Depends(oauth2_scheme)):
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to decrypt file")
 
-    # 📤 بازگرداندن فایل به صورت StreamingResponse
     return StreamingResponse(
         io.BytesIO(decrypted),
         media_type=mime_type,
