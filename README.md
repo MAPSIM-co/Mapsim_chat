@@ -526,6 +526,33 @@ systemctl status Mapsim_chat
 
 ---
 
+## Download APP (Binary Code)
+
+### 1️⃣ Make Folder
+
+```bash
+mkdir -p ~/MapsimChat && cd ~/MapsimChat
+```
+
+### 2️⃣ Download releases Last Version
+
+```bash
+wget -O mapsim_chat "https://github.com/MAPSIM-co/Mapsim_chat/releases/download/V1.0.0/mapsim_chat"
+```
+
+### 3️⃣ Access For Run
+
+```bash
+chmod +x mapsim_chat
+```
+
+### 4️⃣ APP Run 
+
+```bash
+./mapsim_chat
+```
+---
+
 ## ⚡ API Reference – Mapsim Chat
 
 ### 1️⃣ Authentication
