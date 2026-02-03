@@ -4,12 +4,15 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write  # برای دسترسی به release
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ چک کردن سورس
+      # 1️⃣ چک کردن سورس از repo
       - uses: actions/checkout@v4
 
       # 2️⃣ نصب Python
@@ -40,4 +43,5 @@ jobs:
         with:
           artifacts: dist/mapsim_chat
           tag: ${{ github.event.release.tag_name }}
-          token: ${{ secrets.GH_RELEASE_TOKEN }}   # <--- اینجا secret را استفاده کن
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          overwrite: true   # <--- جایگزینی فایل در صورت وجود
