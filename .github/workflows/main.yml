@@ -25,6 +25,7 @@ jobs:
       # 3️⃣ نصب dependencies و PyInstaller
       - name: Install dependencies
         run: |
+          set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
 
@@ -32,13 +33,17 @@ jobs:
       - name: Determine release version
         id: version
         run: |
+          set -e
           API="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
-          LATEST=$(curl -s "$API" | python3 -c "import sys, json; 
-try:
-    data = json.load(sys.stdin)
-    print(data.get('tag_name', ''))
-except:
-    print('')")
+
+          LATEST=$(curl -s "$API" | python3 -c '
+          import sys, json
+          try:
+              data = json.load(sys.stdin)
+              print(data.get("tag_name", ""))
+          except Exception:
+              print("")
+          ')
 
           if [ -z "$LATEST" ]; then
               VERSION="V1.0.0"
@@ -50,12 +55,13 @@ except:
               VERSION="V$MAJOR.$MINOR.$PATCH"
           fi
 
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Release version: $VERSION"
 
       # 5️⃣ Build باینری standalone
       - name: Build standalone binary
         run: |
+          set -e
           pyinstaller --onefile app/main.py --name mapsim_chat
           test -f dist/mapsim_chat
           ls -lh dist/mapsim_chat
