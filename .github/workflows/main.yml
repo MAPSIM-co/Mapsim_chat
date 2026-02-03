@@ -1,20 +1,16 @@
-name: Build Mapsim Chat Binary
+name: Build & Release Mapsim Chat Binary
 
-# اجرا وقتی push می‌کنیم یا روی یک tag push می‌کنیم
 on:
   push:
-    tags:
-      - 'v*'      # هر tag که با v شروع شود
     branches:
-      - main      # یا هر branch دلخواه
+      - main
 
 permissions:
-  contents: read   # چون release نداریم، write لازم نیست
+  contents: write
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +23,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
+          pip install requests
+
+      - name: Determine release version
+        id: version
+        run: |
+          echo "Checking latest release..."
+          LATEST=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | jq -r .tag_name)
+          if [ "$LATEST" = "null" ]; then
+              echo "No release found, using V1.0.0"
+              VERSION=V1.0.0
+          else
+              echo "Latest release: $LATEST"
+              # نسخه patch را یکی افزایش بده، فرض: V1.0.0 -> V1.0.1
+              MAJOR=$(echo $LATEST | cut -d'.' -f1 | tr -d 'V')
+              MINOR=$(echo $LATEST | cut -d'.' -f2)
+              PATCH=$(echo $LATEST | cut -d'.' -f3)
+              PATCH=$((PATCH + 1))
+              VERSION="V$MAJOR.$MINOR.$PATCH"
+          fi
+          echo "Release version will be $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build standalone binary
         run: |
@@ -35,8 +52,11 @@ jobs:
           BIN_FILE=$(ls dist | head -n 1)
           echo "Binary file: $BIN_FILE"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create / Update GitHub Release
+        uses: ncipollo/release-action@v1
         with:
-          name: mapsim_chat
-          path: dist/mapsim_chat
+          tag: ${{ steps.version.outputs.version }}
+          name: Mapsim Chat ${{ steps.version.outputs.version }}
+          artifacts: dist/mapsim_chat
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          skipIfReleaseExists: true
