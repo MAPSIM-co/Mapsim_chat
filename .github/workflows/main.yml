@@ -1,48 +1,41 @@
 name: Build Mapsim Chat Binary
 
-# اجرا وقتی یک release جدید منتشر می‌شود
 on:
   release:
     types: [published]
 
 permissions:
-  contents: write  # برای دسترسی به release و artifacts
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ چک کردن سورس
       - uses: actions/checkout@v4
 
-      # 2️⃣ نصب Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 3️⃣ نصب dependencies و PyInstaller
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
 
-      # 4️⃣ ساخت باینری standalone
       - name: Build standalone binary
         run: |
           pyinstaller --onefile app/main.py --name mapsim_chat
           ls -lh dist/
-          # اگر نام فایل متفاوت بود، rename کن
-          if [ ! -f dist/mapsim_chat ]; then
-              mv dist/* dist/mapsim_chat
-          fi
+          # اطمینان از اینکه فقط یک فایل باینری داریم
+          BIN_FILE=$(ls dist | head -n 1)
+          echo "Binary file: $BIN_FILE"
 
-      # 5️⃣ آپلود به Release با Personal Access Token
       - name: Upload binary to GitHub Release
         uses: ncipollo/release-action@v1
         with:
           artifacts: dist/mapsim_chat
           tag: ${{ github.event.release.tag_name }}
           token: ${{ secrets.GH_RELEASE_TOKEN }}
-          skipIfReleaseExists: true   # <--- اگر release با این tag وجود دارد، خطا نمی‌دهد
+          skipIfReleaseExists: false  # <--- مهم، اجازه می‌دهد باینری روی release آپلود شود حتی اگر tag وجود داشته باشد
